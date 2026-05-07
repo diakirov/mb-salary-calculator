@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased min-h-screen;
+  }
+}
+
+@layer components {
+  .input-placeholder-fade::placeholder {
+    @apply transition-opacity duration-300;
+  }
+  .input-placeholder-fade:focus::placeholder {
+    @apply opacity-0;
+  }
+}
+
+/* Кастомні скролбари */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+/* Плавні переходи для теми */
+* {
+  @apply transition-colors duration-200;
+}
+
+/* Анімація появи */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 1000px; }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
