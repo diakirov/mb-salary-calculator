@@ -55,6 +55,8 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   const [warningConfirmed, setWarningConfirmed] = useState(false)
   const [historyKey, setHistoryKey] = useState(0)
   const [copied, setCopied] = useState('')
+  const [advanceHours] = useState('')
+  const [alarmHours] = useState('')
 
   // Норма годин
   const normHours = getNormHours(schedule, month, year)
