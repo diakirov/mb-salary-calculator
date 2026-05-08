@@ -52,6 +52,10 @@ const salaryConfig = {
     // Максимальна кількість вау-кейсів
     maxWowCases: 5,
 
+    // Стаж
+    tenurePercentPerYear: 0.05, // +5% за кожен повний рік
+    tenureBaseIncome: 63190,    // Цільовий дохід для розрахунку стажу (брутто, грн)
+
     // Кваліфікаційні рівні
     qualificationLevels: {
       1: { name: '1', bonus: 0 },

@@ -14,7 +14,7 @@ import salaryConfig from '../config/salaryConfig.js'
  * @param {string} params.schedule — графік ('2/2' або '5/2')
  * @param {number} params.month — місяць (0-11)
  * @param {number} params.year — рік
- * @param {number} params.storms — бурі (грн, вирахування після податків)
+ * @param {number} params.storms — бури (грн, вирахування після податків)
  * @returns {Object} — результат розрахунку
  */
 export function calculateSVSalary(params) {
@@ -30,6 +30,7 @@ export function calculateSVSalary(params) {
     month = new Date().getMonth(),
     year = new Date().getFullYear(),
     storms = 0,
+    tenure = 0,
   } = params
 
   const config = salaryConfig.sv
@@ -66,6 +67,11 @@ export function calculateSVSalary(params) {
   // x2 години вже включені у workedHours, тому це ДОДАТКОВА оплата (другий ікс)
   const x2Amount = baseRate * x2Hours
 
+  // Стаж: цільовий дохід / норма * ефективні години * (стаж * 5%)
+  const tenurePercent = Math.max(0, Math.floor(tenure)) * config.tenurePercentPerYear
+  const tenureBase = (config.tenureBaseIncome / normHours) * effectiveHours
+  const tenureAmount = tenurePercent > 0 ? tenureBase * tenurePercent : 0
+
   // Квал. надбавка
   const qualAmount = calculateQualBonus(qualLevel, zoneId, normHours, effectiveHours)
 
@@ -73,7 +79,7 @@ export function calculateSVSalary(params) {
   const qualKnowledgeAmount = knowledge ? calculateQualBonusPerHour(qualLevel, zoneId, normHours) : 0
 
   // Сума до податків (брутто)
-  const grossSalary = baseSalary + nightAmount + x2Amount + qualAmount
+  const grossSalary = baseSalary + nightAmount + x2Amount + qualAmount + tenureAmount
 
   // Податок
   const taxAmount = grossSalary * tax
@@ -84,7 +90,7 @@ export function calculateSVSalary(params) {
   // Вау-кейси (після податків, не оподатковуються)
   const wowAmount = Math.min(wowCases, config.maxWowCases) * config.wowCasePayment
 
-  // Бурі (віднімаються від нетто)
+  // Бури (віднімаються від нетто)
   const stormsAmount = Math.max(0, storms)
 
   // Загальна виплата на руки
@@ -113,6 +119,9 @@ export function calculateSVSalary(params) {
       wowAmount: roundMoney(wowAmount),
       stormsAmount: roundMoney(stormsAmount),
       afterTax: roundMoney(afterTax),
+      enureAmount: roundMoney(tenureAmount),
+      tenurePercent,
+      tenureBase: roundMoney(tenureBase),
     },
 
     // Вхідні дані (для збереження в історії)

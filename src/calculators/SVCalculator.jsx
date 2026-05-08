@@ -45,6 +45,8 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   const [month, setMonth] = useState(savedForm?.month !== undefined ? savedForm.month : now.getMonth())
   const [year, setYear] = useState(savedForm?.year || now.getFullYear())
 
+  const [tenure, setTenure] = useState(savedForm?.tenure ?? '')
+
   // UI стан
   const [showExtra, setShowExtra] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -63,8 +65,8 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
 
   // Збереження форми
   useEffect(() => {
-    setSVForm({ workedHours, nightHours, x2Hours, wowCases, storms, knowledge, month, year })
-  }, [workedHours, nightHours, x2Hours, wowCases, storms, knowledge, month, year])
+    setSVForm({ workedHours, nightHours, x2Hours, wowCases, storms, knowledge, month, year, tenure })
+  }, [workedHours, nightHours, x2Hours, wowCases, storms, knowledge, month, year, tenure])
 
   useEffect(() => { setSVQual(qualLevel) }, [qualLevel])
   useEffect(() => { setSVZone(zoneId) }, [zoneId])
@@ -73,7 +75,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   // Авторозрахунок
   useEffect(() => {
     calculate()
-  }, [workedHours, nightHours, x2Hours, qualLevel, zoneId, schedule, knowledge, month, year, wowCases, storms, warningConfirmed])
+  }, [workedHours, nightHours, x2Hours, qualLevel, zoneId, schedule, knowledge, month, year, wowCases, storms, warningConfirmed, tenure])
 
   // === ВАЛІДАЦІЯ ===
   function parseHours(value) {
@@ -152,6 +154,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     const x2 = parseHours(x2Hours) ?? 0
     const wow = Math.min(Math.max(parseInt(wowCases) || 0, 0), config.maxWowCases)
     const stormsVal = parseFloat(String(storms).replace(/\s/g, '').replace(/[,\/]/g, '.')) || 0
+    const tenureVal = parseInt(tenure) || 0
 
     if (!normHours) {
       setResult(null)
@@ -170,6 +173,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
       month,
       year,
       storms: Math.max(0, stormsVal),
+      tenure: tenureVal,
     })
 
     if (calcResult.error) {
@@ -226,9 +230,10 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     if (d.nightAmount > 0) text += `Нічні: +${formatMoney(d.nightAmount)}\n`
     if (d.x2Amount > 0) text += `х2: +${formatMoney(d.x2Amount)}\n`
     if (d.qualAmount > 0) text += `Квал. надбавка: +${formatMoney(d.qualAmount)}\n`
+    if (d.tenureAmount > 0) text += `Стаж (${Math.round(d.tenurePercent * 100)}%): +${formatMoney(d.tenureAmount)}\n`
     if (d.knowledgeAmount > 0) text += `Знання (+1 год): +${formatMoney(d.knowledgeAmount)} (до податків)\n`
     if (d.wowAmount > 0) text += `Вау-кейси: +${formatMoney(d.wowAmount)} (після податків)\n`
-    if (d.stormsAmount > 0) text += `Бурі: -${formatMoney(d.stormsAmount)}\n`
+    if (d.stormsAmount > 0) text += `Бури: -${formatMoney(d.stormsAmount)}\n`
     text += `\nУсього на руки: ${formatMoney(result.net)}`
     return text
   }
@@ -247,6 +252,9 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     }
     if (d.x2Amount > 0) {
       text += `х2: ${formatMoney(d.baseRate)} × ${parseHours(x2Hours) || 0} = ${formatMoney(d.x2Amount)}\n`
+    }
+    if (d.tenureAmount > 0) {
+      text += `Стаж: ${config.tenureBaseIncome} / ${d.normHours} × ${d.effectiveHours} × ${d.tenurePercent} = ${formatMoney(d.tenureAmount)}\n`
     }
     return text
   }
@@ -469,17 +477,21 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   hint={`Максимум ${config.maxWowCases}`}
                 />
                 <Input
-                  label="Бурі (грн)"
+                  label="Бури (грн)"
                   value={storms}
                   onChange={(e) => setStorms(e.target.value)}
                   placeholder="0"
                   hint="Сума утримання після податків"
                 />
                 <Input
-                  label="Стаж"
-                  disabled={true}
-                  placeholder="Скоро..."
-                  hint="Тимчасово недоступне"
+                  label="Стаж (повних років)"
+                  value={tenure}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '')
+                    setTenure(val)
+                  }}
+                  placeholder="0"
+                  hint="Кожен рік = +5%"
                 />
               </div>
             </Card>
@@ -546,6 +558,9 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   {result.details.qualAmount > 0 && (
                     <DetailRow label="Квал. надбавка" value={result.details.qualAmount} plus />
                   )}
+                   {result.details.tenureAmount > 0 && (
+                    <DetailRow label={`Стаж (${Math.round(result.details.tenurePercent * 100)}%)`} value={result.details.tenureAmount} plus />
+                  )}
                   {knowledge && (
                     <DetailRow label="Знання (+1 год)" value={result.details.knowledgeAmount} sub="(враховано в основній + квал)" />
                   )}
@@ -562,7 +577,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                         <DetailRow label="Вау-кейси" value={result.details.wowAmount} plus sub="(без податку)" />
                       )}
                       {result.details.stormsAmount > 0 && (
-                        <DetailRow label="Бурі" value={-result.details.stormsAmount} minus sub="(утримання)" />
+                        <DetailRow label="Бури" value={-result.details.stormsAmount} minus sub="(утримання)" />
                       )}
                     </div>
                   )}
@@ -607,6 +622,9 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   )}
                   {result.details.qualAmount > 0 && (
                     <p>Квал: надбавка / {result.details.normHours} × {result.details.effectiveHours} = {formatMoney(result.details.qualAmount)}</p>
+                  )}
+                  {result.details.tenureAmount > 0 && (
+                    <p>Стаж: {config.tenureBaseIncome} / {result.details.normHours} × {result.details.effectiveHours} × {result.details.tenurePercent} = {formatMoney(result.details.tenureAmount)}</p>
                   )}
                 </div>
               </Card>
