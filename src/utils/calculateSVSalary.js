@@ -57,6 +57,9 @@ export function calculateSVSalary(params) {
   const baseRate = (config.salary + zonePremium) / normHours
   const baseSalary = baseRate * effectiveHours
 
+  const salaryPart = (config.salary / normHours) * effectiveHours
+  const zonePremiumPart = (zonePremium / normHours) * effectiveHours
+
   // Окрема сума за знання (+1 год)
   const knowledgeAmount = baseRate * knowledgeHour
 
@@ -109,6 +112,8 @@ export function calculateSVSalary(params) {
       effectiveHours,
       baseRate: roundMoney(baseRate),
       baseSalary: roundMoney(baseSalary),
+      salaryPart: roundMoney(salaryPart),
+      zonePremiumPart: roundMoney(zonePremiumPart),
       knowledgeAmount: roundMoney(knowledgeAmount),
       nightAmount: roundMoney(nightAmount),
       x2Amount: roundMoney(x2Amount),
@@ -119,7 +124,7 @@ export function calculateSVSalary(params) {
       wowAmount: roundMoney(wowAmount),
       stormsAmount: roundMoney(stormsAmount),
       afterTax: roundMoney(afterTax),
-      enureAmount: roundMoney(tenureAmount),
+      tenureAmount: roundMoney(tenureAmount),
       tenurePercent,
       tenureBase: roundMoney(tenureBase),
     },

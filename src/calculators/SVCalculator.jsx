@@ -547,8 +547,8 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   Деталізація
                 </h3>
                 <div className="space-y-2 text-sm">
-                  <DetailRow label="Основна ЗП" value={result.details.baseSalary} />
-                  <DetailRow label={`Премія за зону (${result.details.zoneName})`} value={result.details.zonePremium} sub="(враховано в основній)" />
+                  <DetailRow label="Оклад" value={result.details.salaryPart} />
+                  <DetailRow label={`Премія за зону (${result.details.zoneName})`} value={result.details.zonePremiumPart} />
                   {result.details.nightAmount > 0 && (
                     <DetailRow label="Нічні" value={result.details.nightAmount} plus />
                   )}
