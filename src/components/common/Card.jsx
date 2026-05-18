@@ -6,9 +6,9 @@ export default function Card({ children, className = '', padding = true }) {
       bg-white dark:bg-gray-800 
       rounded-2xl 
       shadow-sm hover:shadow-md 
-      border border-gray-100 dark:border-gray-700
+      border border-slate-900/10 dark:border-slate-400/[.18]
       transition-shadow duration-200
-      ${padding ? 'p-5 sm:p-6' : ''}
+      ${padding ? 'p-4 sm:p-5' : ''}
       ${className}
     `}>
       {children}

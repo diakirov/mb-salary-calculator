@@ -31,6 +31,7 @@ export function calculateSVSalary(params) {
     year = new Date().getFullYear(),
     storms = 0,
     tenure = 0,
+    taxiExtra = 0,
   } = params
 
   const config = salaryConfig.sv
@@ -96,8 +97,11 @@ export function calculateSVSalary(params) {
   // Бури (віднімаються від нетто)
   const stormsAmount = Math.max(0, storms)
 
+  // Таксі / доплати (після податків, не оподатковуються)
+  const taxiExtraAmount = Math.max(0, taxiExtra)
+
   // Загальна виплата на руки
-  const netSalary = afterTax + wowAmount - stormsAmount
+  const netSalary = afterTax + wowAmount + taxiExtraAmount - stormsAmount
 
   return {
     // Основні результати
@@ -127,6 +131,7 @@ export function calculateSVSalary(params) {
       tenureAmount: roundMoney(tenureAmount),
       tenurePercent,
       tenureBase: roundMoney(tenureBase),
+      taxiExtraAmount: roundMoney(taxiExtraAmount),
     },
 
     // Вхідні дані (для збереження в історії)
