@@ -310,7 +310,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     <div className="min-h-screen pb-24 sm:pb-8">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-slate-900/10 dark:border-slate-400/[.18]">
-        <div className="max-w-[1440px] mx-auto px-4 py-2.5 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
@@ -331,7 +331,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
         </div>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 mt-4 space-y-3">
+      <div className="max-w-[1600px] mx-auto px-4 mt-4 space-y-3">
         
         {/* Row 1: Schedule + Month/Year */}
         <Card>
@@ -341,22 +341,22 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
               options={config.schedules.map(s => ({ value: s, label: s }))}
               value={schedule}
               onChange={setSchedule}
-              className="sm:min-w-[160px]"
+              className="sm:w-[220px] shrink-0"
             />
-            <div className="flex gap-2 flex-1">
+            <div className="flex gap-2 sm:max-w-[420px]">
               <Select
                 label="Місяць"
                 value={month}
                 onChange={(e) => setMonth(parseInt(e.target.value))}
                 options={monthNames.map((name, idx) => ({ value: idx, label: name }))}
-                className="flex-1"
+                className="w-full sm:w-[260px]"
               />
               <Select
                 label="Рік"
                 value={year}
                 onChange={(e) => setYear(parseInt(e.target.value))}
                 options={config.availableYears.map(y => ({ value: y, label: String(y) }))}
-                className="w-24"
+                className="w-[100px] shrink-0"
               />
             </div>
           </div>
@@ -375,15 +375,16 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
         {/* Row 2: Hours – all in one row on desktop */}
         <Card>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Години</label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            <Input
-              label=""
-              value={advanceHours}
-              disabled={true}
-              placeholder="Аванс"
-              hint=""
-            />
-            <div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:max-w-[1000px]">
+            <div className="max-w-[200px]">
+              <Input
+                value={advanceHours}
+                disabled={true}
+                placeholder="Аванс"
+              />
+              <p className="text-[10px] text-gray-400 mt-0.5 ml-1">аванс</p>
+            </div>
+            <div className="max-w-[200px]">
               <Input
                 value={workedHours}
                 onChange={(e) => { setWorkedHours(e.target.value); setWarningConfirmed(false) }}
@@ -392,7 +393,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
               />
               <p className="text-[10px] text-gray-400 mt-0.5 ml-1">відпрацьовані</p>
             </div>
-            <div>
+            <div className="max-w-[200px]">
               <Input
                 value={nightHours}
                 onChange={(e) => setNightHours(e.target.value)}
@@ -401,7 +402,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
               />
               <p className="text-[10px] text-gray-400 mt-0.5 ml-1">ніч</p>
             </div>
-            <div>
+            <div className="max-w-[200px]">
               <Input
                 value={x2Hours}
                 onChange={(e) => setX2Hours(e.target.value)}
@@ -410,11 +411,14 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
               />
               <p className="text-[10px] text-gray-400 mt-0.5 ml-1">х2</p>
             </div>
-            <Input
-              value={alarmHours}
-              disabled={true}
-              placeholder="Тривога"
-            />
+            <div className="max-w-[200px]">
+              <Input
+                value={alarmHours}
+                disabled={true}
+                placeholder="Тривога"
+              />
+              <p className="text-[10px] text-gray-400 mt-0.5 ml-1">тривога</p>
+            </div>
           </div>
           {softWarning && (
             <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg animate-fade-in mt-2">
@@ -428,9 +432,9 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
 
         {/* Row 3: Qual/Zone/Knowledge + Tenure/Wow/Storms/Taxi */}
         <Card>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
             {/* Left column */}
-            <div className="space-y-3">
+            <div className="space-y-3 md:max-w-[480px]">
               <ButtonGroup
                 label="Квал. рівень"
                 options={[
@@ -447,7 +451,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Зона рейтингу
                 </label>
-                <div className="relative">
+                <div className="relative max-w-[360px]">
                   <select
                     value={zoneId}
                     onChange={(e) => setZoneId(parseInt(e.target.value))}
@@ -480,7 +484,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
             </div>
 
             {/* Right column */}
-            <div className="space-y-3">
+            <div className="space-y-3 md:max-w-[420px]">
               <Input
                 label="Стаж (повних років)"
                 value={tenure}
