@@ -4,50 +4,53 @@
 
 @layer base {
   body {
-    @apply antialiased min-h-screen;
+    @apply antialiased min-h-screen text-sm;
+  }
+  .dark body, body.dark-body {
+    background: #0b1120;
   }
 }
 
 @layer components {
   .input-placeholder-fade::placeholder {
-    @apply transition-opacity duration-300;
+    @apply transition-opacity duration-200;
   }
   .input-placeholder-fade:focus::placeholder {
     @apply opacity-0;
   }
+  .panel {
+    @apply rounded-xl border transition-colors duration-150;
+  }
+  .panel-light {
+    @apply bg-white border-[rgba(15,23,42,0.08)];
+  }
+  .panel-dark {
+    @apply bg-[#131b2e] border-[rgba(255,255,255,0.06)];
+  }
 }
 
-/* Кастомні скролбари */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
   @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  @apply bg-gray-300 dark:bg-gray-700 rounded-full;
 }
 
-/* Плавні переходи для теми */
-* {
-  @apply transition-colors duration-200;
-}
-
-/* Анімація появи */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes slideDown {
   from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 1000px; }
+  to { opacity: 1; max-height: 800px; }
 }
-
 .animate-slide-down {
-  animation: slideDown 0.3s ease-out;
+  animation: slideDown 0.2s ease-out;
 }

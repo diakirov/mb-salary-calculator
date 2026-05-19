@@ -8,21 +8,30 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+        surface: {
+          DEFAULT: '#ffffff',
+          secondary: '#f8fafc',
+          dark: '#0d1322',
+          'dark-secondary': '#131b2e',
+          'dark-tertiary': '#1a2340',
+        },
+        accent: {
+          DEFAULT: '#22c55e',
+          muted: '#4ade80',
+          dim: 'rgba(34,197,94,0.14)',
+        },
+        border: {
+          light: 'rgba(15, 23, 42, 0.08)',
+          dark: 'rgba(255, 255, 255, 0.06)',
+          'light-active': 'rgba(34, 197, 94, 0.3)',
+          'dark-active': 'rgba(34, 197, 94, 0.35)',
         },
       },
       maxWidth: {
-        'container': '1024px',
+        'app': '1700px',
+      },
+      fontSize: {
+        '2xs': ['0.6875rem', '1rem'],
       },
     },
   },

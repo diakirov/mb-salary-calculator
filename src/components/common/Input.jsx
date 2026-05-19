@@ -9,13 +9,15 @@ export default function Input({
   disabled = false,
   error,
   hint,
+  icon,
   className = '',
   ...props
 }) {
   return (
-    <div className={`space-y-1 ${className}`}>
+    <div className={`space-y-0.5 ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+          {icon && <span className="mr-1">{icon}</span>}
           {label}
         </label>
       )}
@@ -26,23 +28,23 @@ export default function Input({
         placeholder={placeholder}
         disabled={disabled}
         className={`
-          w-full px-3.5 py-2.5 rounded-xl border text-sm
-          transition-all duration-200
+          w-full h-[38px] px-3 rounded-lg border text-sm
+          transition-all duration-150
           input-placeholder-fade
-          placeholder:text-gray-400 dark:placeholder:text-gray-500
+          placeholder:text-gray-300 dark:placeholder:text-gray-600
           ${disabled 
-            ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-600' 
-            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20'
+            ? 'bg-gray-50 dark:bg-[#0d1322] text-gray-300 dark:text-gray-600 cursor-not-allowed border-gray-100 dark:border-[rgba(255,255,255,0.04)]' 
+            : 'bg-white dark:bg-[#0d1322] text-gray-900 dark:text-gray-100 border-[rgba(15,23,42,0.1)] dark:border-[rgba(255,255,255,0.08)] hover:border-[rgba(34,197,94,0.3)] dark:hover:border-[rgba(34,197,94,0.35)] focus:border-accent focus:ring-1 focus:ring-accent/20'
           }
-          ${error ? 'border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
+          ${error ? 'border-red-400 dark:border-red-500/60 focus:border-red-500 focus:ring-red-500/20' : ''}
         `}
         {...props}
       />
       {error && (
-        <p className="text-xs text-red-500 dark:text-red-400 animate-fade-in">{error}</p>
+        <p className="text-2xs text-red-500 dark:text-red-400 animate-fade-in">{error}</p>
       )}
       {hint && !error && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>
+        <p className="text-2xs text-gray-400 dark:text-gray-500">{hint}</p>
       )}
     </div>
   )
