@@ -6,10 +6,12 @@ export default function Input({
   onChange,
   placeholder,
   type = 'text',
+  inputMode,
   disabled = false,
   error,
   hint,
   icon,
+  centered = false,
   className = '',
   ...props
 }) {
@@ -23,6 +25,7 @@ export default function Input({
       )}
       <input
         type={type}
+        inputMode={inputMode}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
@@ -32,6 +35,7 @@ export default function Input({
           transition-all duration-150
           input-placeholder-fade
           placeholder:text-gray-300 dark:placeholder:text-gray-600
+          ${centered ? 'text-center' : ''}
           ${disabled 
             ? 'bg-gray-50 dark:bg-[#0d1322] text-gray-300 dark:text-gray-600 cursor-not-allowed border-gray-100 dark:border-[rgba(255,255,255,0.04)]' 
             : 'bg-white dark:bg-[#0d1322] text-gray-900 dark:text-gray-100 border-[rgba(15,23,42,0.1)] dark:border-[rgba(255,255,255,0.08)] hover:border-[rgba(34,197,94,0.3)] dark:hover:border-[rgba(34,197,94,0.35)] focus:border-accent focus:ring-1 focus:ring-accent/20'

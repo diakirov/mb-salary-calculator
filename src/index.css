@@ -5,9 +5,8 @@
 @layer base {
   body {
     @apply antialiased min-h-screen text-sm;
-  }
-  .dark body, body.dark-body {
-    background: #0b1120;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
@@ -18,14 +17,19 @@
   .input-placeholder-fade:focus::placeholder {
     @apply opacity-0;
   }
-  .panel {
-    @apply rounded-xl border transition-colors duration-150;
+  /* Stepper */
+  .stepper-btn {
+    @apply w-7 h-7 flex items-center justify-center rounded-md text-sm font-medium
+    bg-gray-100 dark:bg-[#1a2340] text-gray-500 dark:text-gray-400
+    hover:bg-gray-200 dark:hover:bg-[#243050] hover:text-gray-700 dark:hover:text-gray-300
+    active:scale-95 transition-all duration-100 select-none;
   }
-  .panel-light {
-    @apply bg-white border-[rgba(15,23,42,0.08)];
+  .stepper-btn:disabled {
+    @apply opacity-30 pointer-events-none;
   }
-  .panel-dark {
-    @apply bg-[#131b2e] border-[rgba(255,255,255,0.06)];
+  /* Money input formatting */
+  .money-input {
+    font-variant-numeric: tabular-nums;
   }
 }
 

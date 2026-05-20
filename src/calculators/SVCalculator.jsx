@@ -33,6 +33,19 @@ const zoneTheme = {
   5: { light: { bg: '#FEE2E2', border: '#EF4444', text: '#7F1D1D' }, dark: { bg: 'rgba(239,68,68,.12)', border: '#EF4444', text: '#FCA5A5' } },
 }
 
+// Money format helper for input display
+function formatMoneyInput(val) {
+  if (!val) return ''
+  const clean = String(val).replace(/\s/g, '').replace(/[,\/]/g, '.')
+  const parts = clean.split('.')
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  return parts.length > 1 ? `${intPart}.${parts[1]}` : intPart
+}
+
+function unformatMoneyInput(val) {
+  return String(val).replace(/\s/g, '')
+}
+
 export default function SVCalculator({ onBack, theme, setTheme }) {
   const now = new Date()
   const savedForm = getSVForm()
@@ -40,9 +53,9 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   const [workedHours, setWorkedHours] = useState(savedForm?.workedHours ?? '')
   const [nightHours, setNightHours] = useState(savedForm?.nightHours ?? '')
   const [x2Hours, setX2Hours] = useState(savedForm?.x2Hours ?? '')
-  const [wowCases, setWowCases] = useState(savedForm?.wowCases ?? '')
+  const [wowCases, setWowCases] = useState(savedForm?.wowCases ?? '0')
   const [storms, setStorms] = useState(savedForm?.storms ?? '')
-  const [tenure, setTenure] = useState(savedForm?.tenure ?? '')
+  const [tenure, setTenure] = useState(savedForm?.tenure ?? '0')
   const [taxiExtra, setTaxiExtra] = useState(savedForm?.taxiExtra ?? '')
   const [advanceHours] = useState('')
   const [alarmHours] = useState('')
@@ -67,6 +80,19 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   const normHours = getNormHours(schedule, month, year)
   const isDark = theme === 'dark'
   const currentZoneStyle = isDark ? zoneTheme[zoneId]?.dark : zoneTheme[zoneId]?.light
+
+  // Update theme-color meta on theme change
+  useEffect(() => {
+    const metaLight = document.querySelector('meta[name="theme-color"][media*="light"]')
+    const metaDark = document.querySelector('meta[name="theme-color"][media*="dark"]')
+    if (theme === 'dark') {
+      if (metaLight) metaLight.setAttribute('content', '#0b1120')
+      if (metaDark) metaDark.setAttribute('content', '#0b1120')
+    } else {
+      if (metaLight) metaLight.setAttribute('content', '#f8fafc')
+      if (metaDark) metaDark.setAttribute('content', '#f8fafc')
+    }
+  }, [theme])
 
   // Save
   useEffect(() => {
@@ -135,9 +161,9 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     const night = parseHours(nightHours) ?? 0
     const x2 = parseHours(x2Hours) ?? 0
     const wow = Math.min(Math.max(parseInt(wowCases) || 0, 0), config.maxWowCases)
-    const stormsVal = parseFloat(String(storms).replace(/\s/g, '').replace(/[,\/]/g, '.')) || 0
+    const stormsVal = parseFloat(unformatMoneyInput(storms).replace(/[,\/]/g, '.')) || 0
     const tenureVal = parseInt(tenure) || 0
-    const taxiVal = parseFloat(String(taxiExtra).replace(/\s/g, '').replace(/[,\/]/g, '.')) || 0
+    const taxiVal = parseFloat(unformatMoneyInput(taxiExtra).replace(/[,\/]/g, '.')) || 0
 
     if (!normHours) { setResult(null); return }
 
@@ -157,9 +183,10 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   function handleReset() {
     const n = new Date()
     setWorkedHours(''); setNightHours(''); setX2Hours('')
-    setWowCases(''); setStorms(''); setTenure(''); setTaxiExtra('')
+    setWowCases('0'); setStorms(''); setTenure('0'); setTaxiExtra('')
     setWarningConfirmed(false); setSoftWarning(null)
     setResult(null); setErrors({}); setKnowledge(true)
+    setQualLevel(1)
     setMonth(n.getMonth()); setYear(n.getFullYear())
     resetSVData(); setHistoryKey(p => p + 1)
   }
@@ -168,10 +195,10 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     setWorkedHours(input.workedHours !== undefined ? String(input.workedHours) : '')
     setNightHours(input.nightHours !== undefined ? String(input.nightHours) : '')
     setX2Hours(input.x2Hours !== undefined ? String(input.x2Hours) : '')
-    setWowCases(input.wowCases !== undefined ? String(input.wowCases) : '')
+    setWowCases(input.wowCases !== undefined ? String(input.wowCases) : '0')
     setStorms(input.storms !== undefined ? String(input.storms) : '')
-    setTenure(input.tenure !== undefined ? String(input.tenure) : '')
-    setTaxiExtra(input.taxiExtra !== undefined ? String(input.taxiExtra) : '0')
+    setTenure(input.tenure !== undefined ? String(input.tenure) : '0')
+    setTaxiExtra(input.taxiExtra !== undefined ? String(input.taxiExtra) : '')
     setQualLevel(input.qualLevel || 1); setZoneId(input.zoneId || config.defaultZone)
     setSchedule(input.schedule || config.defaultSchedule)
     setKnowledge(input.knowledge !== undefined ? input.knowledge : true)
@@ -203,6 +230,10 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     if (d.taxiExtraAmount > 0) t += `Таксі / доплати: +${formatMoney(d.taxiExtraAmount)}\n`
     if (d.stormsAmount > 0) t += `Бурі: -${formatMoney(d.stormsAmount)}\n`
     t += `\nУсього на руки: ${formatMoney(result.net)}`
+    if (d.tenureAmount > 0) {
+      const tenureNet = d.tenureAmount * (1 - salaryConfig.tax)
+      t += `\nвключаючи стаж чистими: ${formatMoney(tenureNet)}`
+    }
     return t
   }
   function getDetailedWithFormulas() {
@@ -219,26 +250,42 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   }
 
   function confirmWarning() { setWarningConfirmed(true) }
-  function handleWowChange(e) {
-    let v = e.target.value.replace(/\D/g, '')
-    if (v !== '' && parseInt(v) > config.maxWowCases) v = String(config.maxWowCases)
-    setWowCases(v)
+
+  // Stepper handlers
+  function stepTenure(delta) {
+    const cur = parseInt(tenure) || 0
+    const next = Math.max(0, cur + delta)
+    setTenure(String(next))
+  }
+  function stepWow(delta) {
+    const cur = parseInt(wowCases) || 0
+    const next = Math.max(0, Math.min(config.maxWowCases, cur + delta))
+    setWowCases(String(next))
+  }
+
+  // Money input handlers
+  function handleStormsChange(e) {
+    const raw = unformatMoneyInput(e.target.value)
+    setStorms(raw)
+  }
+  function handleTaxiChange(e) {
+    const raw = unformatMoneyInput(e.target.value)
+    setTaxiExtra(raw)
   }
 
   const showDisclaimer = config.disclaimerMonths.includes(month)
 
   // ─── RENDER ───
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0b1120] pb-20 sm:pb-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0b1120] pb-20 lg:pb-6">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/80 dark:bg-[#0d1322]/80 backdrop-blur-md border-b border-[rgba(15,23,42,0.06)] dark:border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-app mx-auto px-4 h-11 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-11 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button onClick={onBack} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a2340] text-gray-400 transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">SV</span>
-            {normHours && <span className="text-2xs text-gray-300 dark:text-gray-600 ml-2">норма {normHours}г</span>}
           </div>
           <div className="flex items-center gap-1.5">
             <button onClick={handleReset} className="text-2xs text-gray-400 hover:text-red-400 transition-colors px-2 py-1 rounded">Скинути</button>
@@ -248,14 +295,15 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
       </header>
 
       {/* Main layout */}
-      <div className="max-w-app mx-auto px-4 mt-4">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mt-4">
         <div className="flex flex-col lg:flex-row gap-4">
 
           {/* ══════ LEFT: INPUTS ══════ */}
-          <div className="flex-1 lg:max-w-[65%] space-y-3">
+          <div className="flex-1 lg:max-w-[720px] space-y-3">
 
-            {/* Config row */}
+            {/* Config block */}
             <Card>
+              {/* Row 1: Schedule + Month + Year */}
               <div className="flex flex-wrap items-end gap-3">
                 <ButtonGroup
                   label="Графік"
@@ -268,22 +316,26 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   value={month}
                   onChange={(e) => setMonth(parseInt(e.target.value))}
                   options={monthNames.map((n, i) => ({ value: i, label: n }))}
-                  className="w-[140px]"
+                  className="w-[130px]"
                 />
                 <Select
                   label="Рік"
                   value={year}
                   onChange={(e) => setYear(parseInt(e.target.value))}
                   options={config.availableYears.map(y => ({ value: y, label: String(y) }))}
-                  className="w-[90px]"
+                  className="w-[85px]"
                 />
+              </div>
+
+              {/* Row 2: Zone + Qual */}
+              <div className="flex flex-wrap items-end gap-3 mt-3">
                 <div className="space-y-0.5">
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Зона</label>
                   <div className="relative">
                     <select
                       value={zoneId}
                       onChange={(e) => setZoneId(parseInt(e.target.value))}
-                      className="h-[38px] pl-3 pr-7 rounded-lg border text-xs font-medium cursor-pointer appearance-none transition-colors"
+                      className="h-[38px] pl-3 pr-7 rounded-lg border text-sm font-inherit cursor-pointer appearance-none transition-colors font-sans"
                       style={{ backgroundColor: currentZoneStyle?.bg, borderColor: currentZoneStyle?.border, color: currentZoneStyle?.text }}
                     >
                       {config.zones.map(z => (
@@ -295,18 +347,31 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                     </div>
                   </div>
                 </div>
+
+                <ButtonGroup
+                  label="Квал."
+                  options={[{ value: 1, label: '1' }, { value: 2, label: '2' }, { value: 3, label: '3' }]}
+                  value={qualLevel}
+                  onChange={setQualLevel}
+                  compact
+                />
               </div>
+
+              {/* Norm + Disclaimer */}
+              {normHours && (
+                <p className="text-2xs text-gray-300 dark:text-gray-600 mt-2">Норма: {normHours} год</p>
+              )}
               {showDisclaimer && (
-                <p className="text-2xs text-amber-600 dark:text-amber-400 mt-2">⚠️ {config.disclaimerText}</p>
+                <p className="text-2xs text-amber-600 dark:text-amber-400 mt-1">⚠️ {config.disclaimerText}</p>
               )}
             </Card>
 
             {/* Hours */}
             <Card>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Години</label>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 max-w-[600px]">
                 <div>
-                  <Input value={advanceHours} disabled placeholder="—" />
+                  <Input value={advanceHours} disabled placeholder="—" centered inputMode="decimal" />
                   <p className="text-2xs text-gray-300 dark:text-gray-600 mt-0.5 text-center">аванс</p>
                 </div>
                 <div>
@@ -315,19 +380,21 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                     onChange={(e) => { setWorkedHours(e.target.value); setWarningConfirmed(false) }}
                     placeholder={normHours ? String(normHours) : '165'}
                     error={errors.workedHours}
+                    centered
+                    inputMode="decimal"
                   />
                   <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5 text-center">відпрацьовані</p>
                 </div>
                 <div>
-                  <Input value={nightHours} onChange={(e) => setNightHours(e.target.value)} placeholder="0" error={errors.nightHours} />
+                  <Input value={nightHours} onChange={(e) => setNightHours(e.target.value)} placeholder="0" error={errors.nightHours} centered inputMode="decimal" />
                   <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5 text-center">🌙 ніч</p>
                 </div>
                 <div>
-                  <Input value={x2Hours} onChange={(e) => setX2Hours(e.target.value)} placeholder="0" error={errors.x2Hours} />
+                  <Input value={x2Hours} onChange={(e) => setX2Hours(e.target.value)} placeholder="0" error={errors.x2Hours} centered inputMode="decimal" />
                   <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5 text-center">⚡ x2</p>
                 </div>
                 <div>
-                  <Input value={alarmHours} disabled placeholder="—" />
+                  <Input value={alarmHours} disabled placeholder="—" centered inputMode="decimal" />
                   <p className="text-2xs text-gray-300 dark:text-gray-600 mt-0.5 text-center">тривога</p>
                 </div>
               </div>
@@ -342,49 +409,77 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
             {/* Bonuses / Corrections */}
             <Card>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Бонуси / корекції</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-3">
-                <ButtonGroup
-                  label="Квал."
-                  options={[{ value: 1, label: '1' }, { value: 2, label: '2' }, { value: 3, label: '3' }]}
-                  value={qualLevel}
-                  onChange={setQualLevel}
-                  compact
-                />
-                <Input
-                  label="Стаж (років)"
-                  value={tenure}
-                  onChange={(e) => setTenure(e.target.value.replace(/\D/g, ''))}
-                  placeholder="0"
-                  hint="+5% / рік"
-                />
-                <Input
-                  label="WOW"
-                  value={wowCases}
-                  onChange={handleWowChange}
-                  placeholder="0"
-                  hint={`макс. ${config.maxWowCases}`}
-                />
-                <div className="flex items-end pb-1">
-                  <Toggle label="Знання" checked={knowledge} onChange={setKnowledge} />
+              
+              {/* Row 1: Стаж + WOW (steppers) */}
+              <div className="grid grid-cols-2 gap-3 max-w-[400px]">
+                {/* Стаж stepper */}
+                <div className="space-y-0.5">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Стаж (років)</label>
+                  <div className="flex items-center gap-1">
+                    <button className="stepper-btn" onClick={() => stepTenure(-1)} disabled={parseInt(tenure) <= 0}>−</button>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={tenure}
+                      onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setTenure(v || '0') }}
+                      className="w-full h-[38px] px-2 rounded-lg border text-sm text-center bg-white dark:bg-[#0d1322] text-gray-900 dark:text-gray-100 border-[rgba(15,23,42,0.1)] dark:border-[rgba(255,255,255,0.08)] focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all"
+                    />
+                    <button className="stepper-btn" onClick={() => stepTenure(1)}>+</button>
+                  </div>
+                  <p className="text-2xs text-gray-400 dark:text-gray-500">+5% / рік</p>
                 </div>
+
+                {/* WOW stepper */}
+                <div className="space-y-0.5">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">WOW</label>
+                  <div className="flex items-center gap-1">
+                    <button className="stepper-btn" onClick={() => stepWow(-1)} disabled={parseInt(wowCases) <= 0}>−</button>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={wowCases}
+                      onChange={(e) => {
+                        let v = e.target.value.replace(/\D/g, '')
+                        if (v !== '' && parseInt(v) > config.maxWowCases) v = String(config.maxWowCases)
+                        setWowCases(v || '0')
+                      }}
+                      className="w-full h-[38px] px-2 rounded-lg border text-sm text-center bg-white dark:bg-[#0d1322] text-gray-900 dark:text-gray-100 border-[rgba(15,23,42,0.1)] dark:border-[rgba(255,255,255,0.08)] focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all"
+                    />
+                    <button className="stepper-btn" onClick={() => stepWow(1)} disabled={parseInt(wowCases) >= config.maxWowCases}>+</button>
+                  </div>
+                  <p className="text-2xs text-gray-400 dark:text-gray-500">макс. {config.maxWowCases}</p>
+                </div>
+              </div>
+
+              {/* Row 2: Бурі + Таксі (money) */}
+              <div className="grid grid-cols-2 gap-3 max-w-[400px] mt-3">
                 <Input
                   label="Бурі (грн)"
-                  value={storms}
-                  onChange={(e) => setStorms(e.target.value)}
+                  value={formatMoneyInput(storms)}
+                  onChange={handleStormsChange}
                   placeholder="0"
+                  inputMode="decimal"
+                  className="money-input"
                 />
                 <Input
                   label="🚕 Таксі / доплати"
-                  value={taxiExtra}
-                  onChange={(e) => setTaxiExtra(e.target.value)}
+                  value={formatMoneyInput(taxiExtra)}
+                  onChange={handleTaxiChange}
                   placeholder="0"
+                  inputMode="decimal"
+                  className="money-input"
                 />
+              </div>
+
+              {/* Row 3: Знання */}
+              <div className="mt-3">
+                <Toggle label="Знання (+1 год)" checked={knowledge} onChange={setKnowledge} />
               </div>
             </Card>
           </div>
 
           {/* ══════ RIGHT: RESULTS ══════ */}
-          <div className="w-full lg:w-[35%] lg:max-w-[480px]">
+          <div className="w-full lg:w-[340px] xl:w-[380px] shrink-0">
             <div className="lg:sticky lg:top-14 space-y-3">
 
               {/* Main result */}
@@ -410,10 +505,10 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                       </p>
                     </div>
 
-                    {/* Toggle details */}
+                    {/* Details toggle */}
                     <button
                       onClick={() => setShowDetails(!showDetails)}
-                      className="text-2xs text-gray-400 dark:text-gray-500 hover:text-accent transition-colors"
+                      className="text-xs text-gray-500 dark:text-gray-400 hover:text-accent transition-colors font-medium"
                     >
                       {showDetails ? '▾ Сховати деталі' : '▸ Деталі'}
                     </button>
@@ -445,12 +540,19 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                         <div className="border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] my-1" />
                         <DRow label="На руки" value={result.net} bold accent />
 
+                        {/* Стаж чистими */}
+                        {result.details.tenureAmount > 0 && (
+                          <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5">
+                            включаючи стаж чистими: {formatMoney(result.details.tenureAmount * (1 - salaryConfig.tax))}
+                          </p>
+                        )}
+
                         {/* Copy details */}
-                        <div className="flex gap-2 pt-2">
-                          <button onClick={() => copyToClipboard(getDetailedResult(), 'det')} className="text-2xs text-gray-400 hover:text-accent transition-colors">
+                        <div className="flex gap-3 pt-2">
+                          <button onClick={() => copyToClipboard(getDetailedResult(), 'det')} className="text-xs text-gray-500 dark:text-gray-400 hover:text-accent transition-colors font-medium">
                             {copied === 'det' ? '✓ скопійовано' : '📋 деталі'}
                           </button>
-                          <button onClick={() => copyToClipboard(getDetailedWithFormulas(), 'form')} className="text-2xs text-gray-400 hover:text-accent transition-colors">
+                          <button onClick={() => copyToClipboard(getDetailedWithFormulas(), 'form')} className="text-xs text-gray-500 dark:text-gray-400 hover:text-accent transition-colors font-medium">
                             {copied === 'form' ? '✓ скопійовано' : '📋 + формули'}
                           </button>
                         </div>
@@ -460,7 +562,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                     {/* Formulas toggle */}
                     <button
                       onClick={() => setShowFormulas(!showFormulas)}
-                      className="text-2xs text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
+                      className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors font-medium"
                     >
                       {showFormulas ? '▾ формули' : '▸ формули'}
                     </button>
@@ -487,10 +589,10 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
         </div>
       </div>
 
-            {/* Mobile sticky bottom */}
+      {/* Mobile sticky bottom */}
       {result && (
-        <div className="fixed bottom-0 left-0 right-0 lg:hidden z-20 bg-white/90 dark:bg-[#0d1322]/90 backdrop-blur-md border-t border-[rgba(15,23,42,0.08)] dark:border-[rgba(255,255,255,0.05)] px-4 py-2.5">
-          <div className="flex items-center justify-between">
+        <div className="fixed bottom-0 left-0 right-0 lg:hidden z-20 bg-white/90 dark:bg-[#0d1322]/90 backdrop-blur-md border-t border-[rgba(15,23,42,0.08)] dark:border-[rgba(255,255,255,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="flex items-center justify-between px-4 py-2.5">
             <span className="text-2xs text-gray-400 dark:text-gray-500">На руки</span>
             <span className="text-base font-bold text-accent-muted tabular-nums">
               {formatMoney(result.net)}
