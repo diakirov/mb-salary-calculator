@@ -35,21 +35,18 @@ const zoneTheme = {
 
 // ─── HELPERS ───
 
-// Format money for display in input (spaces for thousands)
 function formatMoneyDisplay(val) {
   if (!val && val !== '0') return ''
   const clean = String(val).replace(/\s/g, '')
+  if (clean === '0') return ''
   const parts = clean.split('.')
   const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
   return parts.length > 1 ? `${intPart}.${parts[1]}` : intPart
 }
 
-// Clean money input: keep only digits and one decimal separator
 function cleanMoneyInput(raw) {
   let val = raw.replace(/\s/g, '').replace(/[,\/]/g, '.')
-  // Remove non-numeric except dot
   val = val.replace(/[^\d.]/g, '')
-  // Only one dot
   const dotIdx = val.indexOf('.')
   if (dotIdx !== -1) {
     val = val.slice(0, dotIdx + 1) + val.slice(dotIdx + 1).replace(/\./g, '')
@@ -57,48 +54,33 @@ function cleanMoneyInput(raw) {
   return val
 }
 
-// Process hours input with smart formatting
 function processHoursInput(raw, prevValue) {
-  // Remove spaces, replace , and / with .
   let val = raw.replace(/\s/g, '').replace(/[,\/]/g, '.')
-  // Keep only digits and dot
   val = val.replace(/[^\d.]/g, '')
-  // Only one dot allowed
   const dotIdx = val.indexOf('.')
   if (dotIdx !== -1) {
     val = val.slice(0, dotIdx + 1) + val.slice(dotIdx + 1).replace(/\./g, '')
   }
-
   if (val === '' || val === '.') return val === '.' ? '0.' : ''
-
-  // With decimal separator
   if (val.includes('.')) {
     const [intPart, decPart] = val.split('.')
-    // Max 3 digits before decimal
     const clampedInt = intPart.slice(0, 3)
-    // Max 1 digit after, only 0 or 5
     if (decPart === '') return `${clampedInt}.`
     const firstDec = decPart[0]
-    if (firstDec === '0') return clampedInt // 176.0 → 176
+    if (firstDec === '0') return clampedInt
     if (firstDec === '5') return `${clampedInt}.5`
-    // Invalid decimal digit — don't accept
     return prevValue
   }
-
-  // Without decimal: max 4 digits with smart conversion
   if (val.length <= 3) return val
   if (val.length === 4) {
     const fourthDigit = val[3]
-    if (fourthDigit === '0') return val.slice(0, 3) // 1760 → 176
-    if (fourthDigit === '5') return `${val.slice(0, 3)}.5` // 1765 → 176.5
-    // 4th digit is not 0 or 5 — reject it
+    if (fourthDigit === '0') return val.slice(0, 3)
+    if (fourthDigit === '5') return `${val.slice(0, 3)}.5`
     return prevValue
   }
-  // More than 4 digits — don't accept
   return prevValue
 }
 
-// Parse hours for calculation
 function parseHours(value) {
   if (value === '' || value === null || value === undefined) return null
   let c = String(value).replace(/\s/g, '').replace(/[,\/]/g, '.')
@@ -106,13 +88,28 @@ function parseHours(value) {
   return isNaN(n) ? null : n
 }
 
-// Format number for formula display (fix floating point)
 function fmtNum(n) {
   if (n === null || n === undefined) return '0'
-  // Round to reasonable precision
   const rounded = Math.round(n * 10000) / 10000
-  // Remove trailing zeros
   return String(rounded)
+}
+
+// Apply theme to Safari bars
+function applyThemeToDocument(themeValue) {
+  const isDark = themeValue === 'dark'
+  const color = isDark ? '#0b1120' : '#f8fafc'
+  // Meta theme-color
+  const meta = document.getElementById('meta-theme-color')
+  if (meta) meta.setAttribute('content', color)
+  // Html element
+  document.documentElement.style.backgroundColor = color
+  document.body.style.backgroundColor = ''
+  // Class
+  if (isDark) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
 }
 
 export default function SVCalculator({ onBack, theme, setTheme }) {
@@ -122,9 +119,9 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   const [workedHours, setWorkedHours] = useState(savedForm?.workedHours ?? '')
   const [nightHours, setNightHours] = useState(savedForm?.nightHours ?? '')
   const [x2Hours, setX2Hours] = useState(savedForm?.x2Hours ?? '')
-  const [wowCases, setWowCases] = useState(savedForm?.wowCases ?? '0')
+  const [wowCases, setWowCases] = useState(savedForm?.wowCases ?? '')
   const [storms, setStorms] = useState(savedForm?.storms ?? '')
-  const [tenure, setTenure] = useState(savedForm?.tenure ?? '0')
+  const [tenure, setTenure] = useState(savedForm?.tenure ?? '')
   const [taxiExtra, setTaxiExtra] = useState(savedForm?.taxiExtra ?? '')
   const [advanceHours] = useState('')
   const [alarmHours] = useState('')
@@ -150,14 +147,9 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   const isDark = theme === 'dark'
   const currentZoneStyle = isDark ? zoneTheme[zoneId]?.dark : zoneTheme[zoneId]?.light
 
-  // Update theme-color for Safari
+  // Theme sync with Safari
   useEffect(() => {
-    const meta = document.getElementById('meta-theme-color')
-    if (meta) {
-      meta.setAttribute('content', theme === 'dark' ? '#0b1120' : '#f8fafc')
-    }
-    // Also update html background for Safari
-    document.documentElement.style.background = theme === 'dark' ? '#0b1120' : '#f8fafc'
+    applyThemeToDocument(theme)
   }, [theme])
 
   // Save form
@@ -172,7 +164,6 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   useEffect(() => { calculate() }, [workedHours, nightHours, x2Hours, qualLevel, zoneId, schedule, knowledge, month, year, wowCases, storms, warningConfirmed, tenure, taxiExtra])
 
   // ─── VALIDATION ───
-
   function getWorkedHoursError(value) {
     if (value === '' || value === null) return null
     const n = parseHours(value)
@@ -234,7 +225,6 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   }
 
   // ─── HANDLERS ───
-
   function handleHoursChange(setter, prev) {
     return (e) => {
       const processed = processHoursInput(e.target.value, prev)
@@ -247,11 +237,8 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     return (e) => {
       const raw = e.target.value.replace(/\s/g, '')
       let cleaned = cleanMoneyInput(raw)
-      // Max 6 digits (integer part)
       const parts = cleaned.split('.')
-      if (parts[0].length > 6) {
-        parts[0] = parts[0].slice(0, 6)
-      }
+      if (parts[0].length > 6) parts[0] = parts[0].slice(0, 6)
       cleaned = parts.join('.')
       setter(cleaned)
     }
@@ -260,13 +247,13 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   function handleTenureInput(e) {
     let val = e.target.value.replace(/\D/g, '')
     if (val.length > 2) val = val.slice(0, 2)
-    setTenure(val || '0')
+    setTenure(val)
   }
 
   function handleWowInput(e) {
     let val = e.target.value.replace(/\D/g, '')
     if (val !== '' && parseInt(val) > config.maxWowCases) val = String(config.maxWowCases)
-    setWowCases(val || '0')
+    setWowCases(val)
   }
 
   function stepTenure(delta) {
@@ -283,25 +270,29 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   function saveToHistory() {
     if (result && !result.error) { addSVHistory(result); setHistoryKey(p => p + 1) }
   }
+
   function handleReset() {
     const n = new Date()
     setWorkedHours(''); setNightHours(''); setX2Hours('')
-    setWowCases('0'); setStorms(''); setTenure('0'); setTaxiExtra('')
+    setWowCases(''); setStorms(''); setTenure(''); setTaxiExtra('')
     setWarningConfirmed(false); setSoftWarning(null)
     setResult(null); setErrors({}); setKnowledge(true)
     setQualLevel(1)
+    setZoneId(config.defaultZone)
+    setSchedule(config.defaultSchedule)
     setMonth(n.getMonth()); setYear(n.getFullYear())
     resetSVData(); setHistoryKey(p => p + 1)
   }
+
   function handleRestore(input) {
     if (!input) return
     setWorkedHours(input.workedHours !== undefined ? String(input.workedHours) : '')
     setNightHours(input.nightHours !== undefined ? String(input.nightHours) : '')
     setX2Hours(input.x2Hours !== undefined ? String(input.x2Hours) : '')
-    setWowCases(input.wowCases !== undefined ? String(input.wowCases) : '0')
-    setStorms(input.storms !== undefined ? String(input.storms) : '')
-    setTenure(input.tenure !== undefined ? String(input.tenure) : '0')
-    setTaxiExtra(input.taxiExtra !== undefined ? String(input.taxiExtra) : '')
+    setWowCases(input.wowCases !== undefined && input.wowCases > 0 ? String(input.wowCases) : '')
+    setStorms(input.storms !== undefined && input.storms > 0 ? String(input.storms) : '')
+    setTenure(input.tenure !== undefined && input.tenure > 0 ? String(input.tenure) : '')
+    setTaxiExtra(input.taxiExtra !== undefined && input.taxiExtra > 0 ? String(input.taxiExtra) : '')
     setQualLevel(input.qualLevel || 1); setZoneId(input.zoneId || config.defaultZone)
     setSchedule(input.schedule || config.defaultSchedule)
     setKnowledge(input.knowledge !== undefined ? input.knowledge : true)
@@ -357,7 +348,8 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
 
   // ─── DERIVED ───
   const showDisclaimer = config.disclaimerMonths.includes(month)
-  const tenureHint = (parseInt(tenure) || 0) >= 21 ? 'ого, легенда mono!' : '+5% / рік'
+  const tenureNum = parseInt(tenure) || 0
+  const tenureHint = tenureNum >= 21 ? 'ого, легенда mono!' : '+5% / рік'
   const stormsHint = (parseFloat(cleanMoneyInput(storms)) || 0) > 99999 ? 'Скільки-скільки?' : undefined
   const taxiHint = (parseFloat(cleanMoneyInput(taxiExtra)) || 0) > 99999 ? 'Скільки-скільки?' : undefined
 
@@ -366,26 +358,26 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     <div className="min-h-screen bg-gray-50 dark:bg-[#0b1120] pb-20 lg:pb-6">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/80 dark:bg-[#0d1322]/80 backdrop-blur-md border-b border-[rgba(15,23,42,0.06)] dark:border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-11 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button onClick={onBack} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a2340] text-gray-400 transition-colors">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <button onClick={onBack} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-[#1a2340] text-gray-400 transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">SV</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <button onClick={handleReset} className="text-2xs text-gray-400 hover:text-red-400 transition-colors px-2 py-1 rounded">Скинути</button>
+          <div className="flex items-center gap-2">
+            <button onClick={handleReset} className="text-xs text-gray-400 hover:text-red-400 transition-colors px-2 py-1 rounded">Скинути</button>
             <ThemeToggle theme={theme} setTheme={setTheme} />
           </div>
         </div>
       </header>
 
       {/* Main layout */}
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 mt-4">
-        <div className="flex flex-col lg:flex-row lg:justify-center gap-4">
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-8 mt-5">
+        <div className="flex flex-col lg:flex-row lg:justify-center gap-5">
 
           {/* ══════ LEFT: INPUTS ══════ */}
-          <div className="w-full lg:w-auto lg:min-w-[420px] lg:max-w-[600px] space-y-3">
+          <div className="w-full lg:w-auto lg:min-w-[460px] lg:max-w-[660px] space-y-3.5">
 
             {/* Config block */}
             <Card>
@@ -401,14 +393,14 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   value={month}
                   onChange={(e) => setMonth(parseInt(e.target.value))}
                   options={monthNames.map((n, i) => ({ value: i, label: n }))}
-                  className="w-[130px]"
+                  className="w-[140px]"
                 />
                 <Select
                   label="Рік"
                   value={year}
                   onChange={(e) => setYear(parseInt(e.target.value))}
                   options={config.availableYears.map(y => ({ value: y, label: String(y) }))}
-                  className="w-[85px]"
+                  className="w-[90px]"
                 />
               </div>
 
@@ -419,14 +411,14 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                     <select
                       value={zoneId}
                       onChange={(e) => setZoneId(parseInt(e.target.value))}
-                      className="h-[38px] pl-3 pr-7 rounded-lg border text-sm font-medium font-sans cursor-pointer appearance-none transition-colors"
+                      className="h-[40px] pl-3 pr-8 rounded-lg border text-sm font-medium font-sans cursor-pointer appearance-none transition-colors"
                       style={{ backgroundColor: currentZoneStyle?.bg, borderColor: currentZoneStyle?.border, color: currentZoneStyle?.text }}
                     >
                       {config.zones.map(z => (
                         <option key={z.id} value={z.id}>{z.name.charAt(0).toUpperCase() + z.name.slice(1)}</option>
                       ))}
                     </select>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                       <svg className="w-3 h-3" style={{ color: currentZoneStyle?.text }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </div>
                   </div>
@@ -441,22 +433,22 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
               </div>
 
               {normHours && (
-                <p className="text-2xs text-gray-300 dark:text-gray-600 mt-2">Норма: {normHours} год</p>
+                <p className="text-xs text-gray-300 dark:text-gray-600 mt-2.5">Норма: {normHours} год</p>
               )}
               {showDisclaimer && (
-                <p className="text-2xs text-amber-600 dark:text-amber-400 mt-1">⚠️ {config.disclaimerText}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">⚠️ {config.disclaimerText}</p>
               )}
             </Card>
 
             {/* Hours */}
             <Card>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Години</label>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                <div className="max-w-[100px]">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 max-w-[560px]">
+                <div className="max-w-[110px]">
                   <Input value={advanceHours} disabled placeholder="—" centered inputMode="decimal" />
                   <p className="text-2xs text-gray-300 dark:text-gray-600 mt-0.5 text-center">аванс</p>
                 </div>
-                <div className="max-w-[100px]">
+                <div className="max-w-[110px]">
                   <Input
                     value={workedHours}
                     onChange={handleHoursChange(setWorkedHours, workedHours)}
@@ -467,7 +459,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   />
                   <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5 text-center">відпрацьовані</p>
                 </div>
-                <div className="max-w-[100px]">
+                <div className="max-w-[110px]">
                   <Input
                     value={nightHours}
                     onChange={handleHoursChange(setNightHours, nightHours)}
@@ -478,7 +470,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   />
                   <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5 text-center">🌙 ніч</p>
                 </div>
-                <div className="max-w-[100px]">
+                <div className="max-w-[110px]">
                   <Input
                     value={x2Hours}
                     onChange={handleHoursChange(setX2Hours, x2Hours)}
@@ -489,15 +481,15 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                   />
                   <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5 text-center">⚡ x2</p>
                 </div>
-                <div className="max-w-[100px]">
+                <div className="max-w-[110px]">
                   <Input value={alarmHours} disabled placeholder="—" centered inputMode="decimal" />
                   <p className="text-2xs text-gray-300 dark:text-gray-600 mt-0.5 text-center">тривога</p>
                 </div>
               </div>
               {softWarning && (
-                <div className="flex items-center gap-2 mt-2 p-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg text-xs text-amber-700 dark:text-amber-400 animate-fade-in">
+                <div className="flex items-center gap-2 mt-2.5 p-2.5 bg-amber-50 dark:bg-amber-900/10 rounded-lg text-xs text-amber-700 dark:text-amber-400 animate-fade-in">
                   <span className="flex-1">{softWarning}</span>
-                  <button onClick={confirmWarning} className="text-2xs font-medium px-2 py-1 rounded bg-amber-100 dark:bg-amber-800/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors">OK</button>
+                  <button onClick={confirmWarning} className="text-xs font-medium px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-800/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors">OK</button>
                 </div>
               )}
             </Card>
@@ -506,21 +498,21 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
             <Card>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Бонуси / корекції</label>
 
-              {/* Steppers row */}
-              <div className="grid grid-cols-2 gap-3 max-w-[340px]">
+              <div className="grid grid-cols-2 gap-3 max-w-[380px]">
                 {/* Стаж */}
                 <div className="space-y-0.5">
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Стаж (років)</label>
                   <div className="stepper-wrap">
-                    <button className="stepper-btn" onClick={() => stepTenure(-1)} disabled={parseInt(tenure) <= 0}>−</button>
+                    <button className="stepper-btn" onClick={() => stepTenure(-1)} disabled={tenureNum <= 0}>−</button>
                     <input
                       type="text"
                       inputMode="numeric"
                       value={tenure}
                       onChange={handleTenureInput}
+                      placeholder="0"
                       className="stepper-input"
                     />
-                    <button className="stepper-btn" onClick={() => stepTenure(1)} disabled={parseInt(tenure) >= 99}>+</button>
+                    <button className="stepper-btn" onClick={() => stepTenure(1)} disabled={tenureNum >= 99}>+</button>
                   </div>
                   <p className="text-2xs text-gray-400 dark:text-gray-500">{tenureHint}</p>
                 </div>
@@ -529,22 +521,22 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                 <div className="space-y-0.5">
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">WOW</label>
                   <div className="stepper-wrap">
-                    <button className="stepper-btn" onClick={() => stepWow(-1)} disabled={parseInt(wowCases) <= 0}>−</button>
+                    <button className="stepper-btn" onClick={() => stepWow(-1)} disabled={(parseInt(wowCases) || 0) <= 0}>−</button>
                     <input
                       type="text"
                       inputMode="numeric"
                       value={wowCases}
                       onChange={handleWowInput}
+                      placeholder="0"
                       className="stepper-input"
                     />
-                    <button className="stepper-btn" onClick={() => stepWow(1)} disabled={parseInt(wowCases) >= config.maxWowCases}>+</button>
+                    <button className="stepper-btn" onClick={() => stepWow(1)} disabled={(parseInt(wowCases) || 0) >= config.maxWowCases}>+</button>
                   </div>
                   <p className="text-2xs text-gray-400 dark:text-gray-500">макс. {config.maxWowCases}</p>
                 </div>
               </div>
 
-              {/* Money row */}
-              <div className="grid grid-cols-2 gap-3 max-w-[340px] mt-3">
+              <div className="grid grid-cols-2 gap-3 max-w-[380px] mt-3">
                 <Input
                   label="Бурі (грн)"
                   value={formatMoneyDisplay(storms)}
@@ -563,7 +555,6 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                 />
               </div>
 
-              {/* Knowledge toggle */}
               <div className="mt-3">
                 <Toggle label="Знання (+1 год)" checked={knowledge} onChange={setKnowledge} />
               </div>
@@ -571,8 +562,8 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
           </div>
 
           {/* ══════ RIGHT: RESULTS ══════ */}
-          <div className="w-full lg:w-[340px] xl:w-[380px] shrink-0">
-            <div className="lg:sticky lg:top-14 space-y-3">
+          <div className="w-full lg:w-[360px] xl:w-[400px] shrink-0">
+            <div className="lg:sticky lg:top-16 space-y-3.5">
 
               <Card active={!!result}>
                 {result ? (
@@ -580,23 +571,22 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                     <div className="flex items-start justify-between">
                       <ResultCard label="Усього на руки" amount={result.net} variant="success" />
                       <div className="flex gap-1 mt-1">
-                        <button onClick={() => copyToClipboard(getShortResult(), 'short')} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a2340] text-gray-300 dark:text-gray-600 hover:text-accent text-xs transition-colors" title="Копіювати">
+                        <button onClick={() => copyToClipboard(getShortResult(), 'short')} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-[#1a2340] text-gray-300 dark:text-gray-600 hover:text-accent text-xs transition-colors" title="Копіювати">
                           {copied === 'short' ? '✓' : '📋'}
                         </button>
-                        <button onClick={saveToHistory} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a2340] text-gray-300 dark:text-gray-600 hover:text-accent text-xs transition-colors" title="Зберегти">
+                        <button onClick={saveToHistory} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-[#1a2340] text-gray-300 dark:text-gray-600 hover:text-accent text-xs transition-colors" title="Зберегти">
                           💾
                         </button>
                       </div>
                     </div>
 
-                    <div className="border-t border-[rgba(15,23,42,0.05)] dark:border-[rgba(255,255,255,0.04)] pt-2">
+                    <div className="border-t border-[rgba(15,23,42,0.05)] dark:border-[rgba(255,255,255,0.04)] pt-2.5">
                       <ResultCard label="Брутто" amount={result.gross} variant="default" />
-                      <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                         Податок {(salaryConfig.tax*100).toFixed(0)}%: -{formatMoney(result.tax)}
                       </p>
                     </div>
 
-                    {/* Details toggle */}
                     <button
                       onClick={() => setShowDetails(!showDetails)}
                       className="text-xs text-gray-500 dark:text-gray-400 hover:text-accent transition-colors font-medium"
@@ -605,7 +595,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                     </button>
 
                     {showDetails && (
-                      <div className="space-y-1 text-xs animate-fade-in border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] pt-2">
+                      <div className="space-y-1 text-sm animate-fade-in border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] pt-2.5">
                         <DRow label="Оклад" value={result.details.salaryPart} />
                         <DRow label={`Премія (${result.details.zoneName})`} value={result.details.zonePremiumPart} />
                         {result.details.nightAmount > 0 && <DRow label="🌙 Нічні" value={result.details.nightAmount} plus />}
@@ -614,30 +604,30 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                         {result.details.tenureAmount > 0 && <DRow label={`Стаж (${Math.round(result.details.tenurePercent*100)}%)`} value={result.details.tenureAmount} plus />}
                         {knowledge && result.details.knowledgeAmount > 0 && <DRow label="Знання (+1г)" value={result.details.knowledgeAmount} sub="до подат." />}
 
-                        <div className="border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] my-1" />
+                        <div className="border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] my-1.5" />
                         <DRow label="Брутто" value={result.gross} bold />
                         <DRow label="Податок" value={-result.tax} minus />
                         <DRow label="Після податків" value={result.details.afterTax} />
 
                         {(result.details.wowAmount > 0 || result.details.taxiExtraAmount > 0 || result.details.stormsAmount > 0) && (
                           <>
-                            <div className="border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] my-1" />
+                            <div className="border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] my-1.5" />
                             {result.details.wowAmount > 0 && <DRow label="WOW" value={result.details.wowAmount} plus />}
                             {result.details.taxiExtraAmount > 0 && <DRow label="🚕 Таксі" value={result.details.taxiExtraAmount} plus />}
                             {result.details.stormsAmount > 0 && <DRow label="Бурі" value={-result.details.stormsAmount} minus />}
                           </>
                         )}
 
-                        <div className="border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] my-1" />
+                        <div className="border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] my-1.5" />
                         <DRow label="На руки" value={result.net} bold accent />
 
                         {result.details.tenureAmount > 0 && (
-                          <p className="text-2xs text-gray-400 dark:text-gray-500 mt-0.5">
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                             включаючи стаж чистими: {formatMoney(result.details.tenureAmount * (1 - salaryConfig.tax))}
                           </p>
                         )}
 
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex gap-3 pt-2.5">
                           <button onClick={() => copyToClipboard(getDetailedResult(), 'det')} className="text-xs text-gray-500 dark:text-gray-400 hover:text-accent transition-colors font-medium">
                             {copied === 'det' ? '✓ скопійовано' : '📋 деталі'}
                           </button>
@@ -648,7 +638,6 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                       </div>
                     )}
 
-                    {/* Formulas */}
                     <button
                       onClick={() => setShowFormulas(!showFormulas)}
                       className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors font-medium"
@@ -656,7 +645,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                       {showFormulas ? '▾ формули' : '▸ формули'}
                     </button>
                     {showFormulas && (
-                      <div className="text-2xs font-mono text-gray-400 dark:text-gray-500 space-y-0.5 animate-fade-in">
+                      <div className="text-xs font-mono text-gray-400 dark:text-gray-500 space-y-0.5 animate-fade-in">
                         <p>({config.salary}+{result.details.zonePremium})/{result.details.normHours}×{result.details.effectiveHours} = {formatMoney(result.details.baseSalary)}</p>
                         {result.details.nightAmount > 0 && <p>ніч: {config.salary}/{result.details.normHours}×{parseHours(nightHours)}×{fmtNum(config.nightBonus)} = {formatMoney(result.details.nightAmount)}</p>}
                         {result.details.x2Amount > 0 && <p>х2: {formatMoney(result.details.baseRate)}×{parseHours(x2Hours)} = {formatMoney(result.details.x2Amount)}</p>}
@@ -665,8 +654,8 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                     )}
                   </div>
                 ) : (
-                  <div className="text-center py-6">
-                    <p className="text-xs text-gray-300 dark:text-gray-600">Введи години для розрахунку</p>
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-300 dark:text-gray-600">Введи години для розрахунку</p>
                   </div>
                 )}
               </Card>
@@ -681,11 +670,11 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
       {result && (
         <div
           className="fixed bottom-0 left-0 right-0 lg:hidden z-20 bg-white/90 dark:bg-[#0d1322]/90 backdrop-blur-md border-t border-[rgba(15,23,42,0.08)] dark:border-[rgba(255,255,255,0.05)]"
-          style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+          style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}
         >
-          <div className="flex items-center justify-between px-4 py-2">
-            <span className="text-2xs text-gray-400 dark:text-gray-500">На руки</span>
-            <span className="text-base font-bold text-accent-muted tabular-nums">
+          <div className="flex items-center justify-between px-5 py-2.5">
+            <span className="text-xs text-gray-400 dark:text-gray-500">На руки</span>
+            <span className="text-lg font-bold text-accent-muted tabular-nums">
               {formatMoney(result.net)}
             </span>
           </div>
@@ -695,7 +684,6 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
   )
 }
 
-// Detail row
 function DRow({ label, value, plus, minus, bold, accent, sub }) {
   if (value === undefined || value === null) return null
   const color = accent
@@ -710,7 +698,7 @@ function DRow({ label, value, plus, minus, bold, accent, sub }) {
     <div className="flex justify-between items-center py-0.5">
       <div className="flex items-center gap-1">
         <span className={`${bold ? 'font-semibold' : ''} text-gray-500 dark:text-gray-400`}>{label}</span>
-        {sub && <span className="text-2xs text-gray-300 dark:text-gray-600">({sub})</span>}
+        {sub && <span className="text-xs text-gray-300 dark:text-gray-600">({sub})</span>}
       </div>
       <span className={`tabular-nums ${bold ? 'font-semibold' : 'font-medium'} ${color}`}>
         {value < 0 ? '-' : plus ? '+' : ''}{formatMoney(Math.abs(value))}

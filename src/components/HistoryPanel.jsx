@@ -71,7 +71,7 @@ export default function HistoryPanel({ onRestore }) {
                   <HRow label="Податок" value={-item.tax} minus />
                   {item.details.wowAmount > 0 && <HRow label="Wow" value={item.details.wowAmount} plus />}
                   {item.details.taxiExtraAmount > 0 && <HRow label="Таксі" value={item.details.taxiExtraAmount} plus />}
-                  {item.details.stormsAmount > 0 && <HRow label="Бурі" value={-item.details.stormsAmount} minus />}
+                  {item.details.stormsAmount > 0 && <HRow label="Бури" value={-item.details.stormsAmount} minus />}
                   <div className="border-t border-[rgba(15,23,42,0.03)] dark:border-[rgba(255,255,255,0.02)] my-0.5" />
                   <HRow label="На руки" value={item.net} bold accent />
                 </div>
