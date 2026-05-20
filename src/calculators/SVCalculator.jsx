@@ -325,7 +325,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
     if (d.knowledgeAmount > 0) t += `Знання (+1 год): +${formatMoney(d.knowledgeAmount)}\n`
     if (d.wowAmount > 0) t += `Вау-кейси: +${formatMoney(d.wowAmount)}\n`
     if (d.taxiExtraAmount > 0) t += `Таксі / доплати: +${formatMoney(d.taxiExtraAmount)}\n`
-    if (d.stormsAmount > 0) t += `Бурі: -${formatMoney(d.stormsAmount)}\n`
+    if (d.stormsAmount > 0) t += `Бури: -${formatMoney(d.stormsAmount)}\n`
     t += `\nУсього на руки: ${formatMoney(result.net)}`
     if (d.tenureAmount > 0) {
       const tenureNet = d.tenureAmount * (1 - salaryConfig.tax)
@@ -538,7 +538,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
 
               <div className="grid grid-cols-2 gap-3 max-w-[380px] mt-3">
                 <Input
-                  label="Бурі (грн)"
+                  label="Бури"
                   value={formatMoneyDisplay(storms)}
                   onChange={handleMoneyChange(setStorms)}
                   placeholder="0"
@@ -614,7 +614,7 @@ export default function SVCalculator({ onBack, theme, setTheme }) {
                             <div className="border-t border-[rgba(15,23,42,0.04)] dark:border-[rgba(255,255,255,0.03)] my-1.5" />
                             {result.details.wowAmount > 0 && <DRow label="WOW" value={result.details.wowAmount} plus />}
                             {result.details.taxiExtraAmount > 0 && <DRow label="🚕 Таксі" value={result.details.taxiExtraAmount} plus />}
-                            {result.details.stormsAmount > 0 && <DRow label="Бурі" value={-result.details.stormsAmount} minus />}
+                            {result.details.stormsAmount > 0 && <DRow label="Бури" value={-result.details.stormsAmount} minus />}
                           </>
                         )}
 
